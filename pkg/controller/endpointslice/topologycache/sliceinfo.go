@@ -17,20 +17,10 @@ limitations under the License.
 package topologycache
 
 import (
-	discovery "k8s.io/api/discovery/v1"
+	"k8s.io/kubernetes/pkg/controller/endpointslice/hints"
 )
 
-// SliceInfo stores information about EndpointSlices for the reconciliation
-// process.
-type SliceInfo struct {
-	ServiceKey  string
-	AddressType discovery.AddressType
-	ToCreate    []*discovery.EndpointSlice
-	ToUpdate    []*discovery.EndpointSlice
-	Unchanged   []*discovery.EndpointSlice
-}
-
-func (si *SliceInfo) getTotalReadyEndpoints() int {
+func getTotalReadyEndpoints(si *hints.SliceInfo) int {
 	totalEndpoints := 0
 	for _, slice := range si.ToCreate {
 		totalEndpoints += numReadyEndpoints(slice.Endpoints)
@@ -52,7 +42,7 @@ func (si *SliceInfo) getTotalReadyEndpoints() int {
 //   - It has endpoint hints that would make the minimum allocations necessary
 //     impossible with changes to slices that are already being updated or
 //     created.
-func (si *SliceInfo) getAllocatedHintsByZone(allocations map[string]Allocation) EndpointZoneInfo {
+func getAllocatedHintsByZone(si *hints.SliceInfo, allocations map[string]Allocation) EndpointZoneInfo {
 	allocatedHintsByZone := EndpointZoneInfo{}
 
 	// Using filtering in place to remove any endpoints that are no longer

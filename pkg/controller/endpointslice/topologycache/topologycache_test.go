@@ -24,6 +24,7 @@ import (
 	discovery "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubernetes/pkg/controller/endpointslice/hints"
 	utilpointer "k8s.io/utils/pointer"
 )
 
@@ -31,14 +32,14 @@ func TestAddHints(t *testing.T) {
 	testCases := []struct {
 		name                        string
 		cpuRatiosByZone             map[string]float64
-		sliceInfo                   *SliceInfo
+		sliceInfo                   *hints.SliceInfo
 		expectedEndpointsByAddrType map[discovery.AddressType]EndpointZoneInfo
 		expectedSlicesToCreate      []*discovery.EndpointSlice
 		expectedSlicesToUpdate      []*discovery.EndpointSlice
 	}{{
 		name:            "empty",
 		cpuRatiosByZone: nil,
-		sliceInfo: &SliceInfo{
+		sliceInfo: &hints.SliceInfo{
 			ServiceKey:  "ns/svc",
 			AddressType: discovery.AddressTypeIPv4,
 		},
@@ -48,7 +49,7 @@ func TestAddHints(t *testing.T) {
 	}, {
 		name:            "slice to create, no zone ratios",
 		cpuRatiosByZone: nil,
-		sliceInfo: &SliceInfo{
+		sliceInfo: &hints.SliceInfo{
 			ServiceKey:  "ns/svc",
 			AddressType: discovery.AddressTypeIPv4,
 			ToCreate: []*discovery.EndpointSlice{{
@@ -75,7 +76,7 @@ func TestAddHints(t *testing.T) {
 			"zone-b": 0.4,
 			"zone-c": 0.3,
 		},
-		sliceInfo: &SliceInfo{
+		sliceInfo: &hints.SliceInfo{
 			ServiceKey:  "ns/svc",
 			AddressType: discovery.AddressTypeIPv4,
 			ToCreate: []*discovery.EndpointSlice{{
@@ -109,7 +110,7 @@ func TestAddHints(t *testing.T) {
 			"zone-a": 0.45,
 			"zone-b": 0.55,
 		},
-		sliceInfo: &SliceInfo{
+		sliceInfo: &hints.SliceInfo{
 			ServiceKey:  "ns/svc",
 			AddressType: discovery.AddressTypeIPv4,
 			ToCreate: []*discovery.EndpointSlice{{
@@ -150,7 +151,7 @@ func TestAddHints(t *testing.T) {
 			"zone-a": 0.45,
 			"zone-b": 0.55,
 		},
-		sliceInfo: &SliceInfo{
+		sliceInfo: &hints.SliceInfo{
 			ServiceKey:  "ns/svc",
 			AddressType: discovery.AddressTypeIPv4,
 			ToCreate: []*discovery.EndpointSlice{{
@@ -208,7 +209,7 @@ func TestAddHints(t *testing.T) {
 			"zone-b": 0.35,
 			"zone-c": 0.30,
 		},
-		sliceInfo: &SliceInfo{
+		sliceInfo: &hints.SliceInfo{
 			ServiceKey:  "ns/svc",
 			AddressType: discovery.AddressTypeIPv4,
 			ToCreate: []*discovery.EndpointSlice{{

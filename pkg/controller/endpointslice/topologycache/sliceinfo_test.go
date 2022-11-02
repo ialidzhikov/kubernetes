@@ -21,36 +21,37 @@ import (
 	"testing"
 
 	discovery "k8s.io/api/discovery/v1"
+	"k8s.io/kubernetes/pkg/controller/endpointslice/hints"
 	utilpointer "k8s.io/utils/pointer"
 )
 
 func Test_getTotalReadyEndpoints(t *testing.T) {
 	testCases := []struct {
 		name               string
-		si                 *SliceInfo
+		si                 *hints.SliceInfo
 		expectedTotalReady int
 		expectedTotal      int // this is really just testing the test helper
 	}{{
 		name:          "empty",
-		si:            &SliceInfo{},
+		si:            &hints.SliceInfo{},
 		expectedTotal: 0,
 	}, {
 		name: "empty slice",
-		si: &SliceInfo{
+		si: &hints.SliceInfo{
 			ToCreate: []*discovery.EndpointSlice{sliceWithNEndpoints(0, 0)},
 		},
 		expectedTotalReady: 0,
 		expectedTotal:      0,
 	}, {
 		name: "multiple slices",
-		si: &SliceInfo{
+		si: &hints.SliceInfo{
 			ToCreate: []*discovery.EndpointSlice{sliceWithNEndpoints(15, 0), sliceWithNEndpoints(8, 0)},
 		},
 		expectedTotalReady: 23,
 		expectedTotal:      23,
 	}, {
 		name: "slices for all",
-		si: &SliceInfo{
+		si: &hints.SliceInfo{
 			ToCreate:  []*discovery.EndpointSlice{sliceWithNEndpoints(15, 0), sliceWithNEndpoints(8, 0)},
 			ToUpdate:  []*discovery.EndpointSlice{sliceWithNEndpoints(2, 0)},
 			Unchanged: []*discovery.EndpointSlice{sliceWithNEndpoints(100, 0), sliceWithNEndpoints(90, 0)},
@@ -59,7 +60,7 @@ func Test_getTotalReadyEndpoints(t *testing.T) {
 		expectedTotal:      215,
 	}, {
 		name: "slices for all with some unready",
-		si: &SliceInfo{
+		si: &hints.SliceInfo{
 			ToCreate:  []*discovery.EndpointSlice{sliceWithNEndpoints(15, 3), sliceWithNEndpoints(5, 4)},
 			ToUpdate:  []*discovery.EndpointSlice{sliceWithNEndpoints(3, 8)},
 			Unchanged: []*discovery.EndpointSlice{sliceWithNEndpoints(98, 2), sliceWithNEndpoints(90, 6)},
@@ -77,7 +78,7 @@ func Test_getTotalReadyEndpoints(t *testing.T) {
 				t.Errorf("Problem with test or test helper. Expected %d total endpoints, got %d", tc.expectedTotal, actualTotal)
 			}
 
-			actualTotalReady := tc.si.getTotalReadyEndpoints()
+			actualTotalReady := getTotalReadyEndpoints(tc.si)
 			if actualTotalReady != tc.expectedTotalReady {
 				t.Errorf("Expected %d, got %d", tc.expectedTotalReady, actualTotalReady)
 			}

@@ -24,6 +24,7 @@ import (
 	discovery "k8s.io/api/discovery/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/pkg/controller/endpointslice/hints"
 	endpointsliceutil "k8s.io/kubernetes/pkg/controller/util/endpointslice"
 )
 
@@ -84,17 +85,17 @@ func (t *TopologyCache) GetOverloadedServices() []string {
 
 // AddHints adds or updates topology hints on EndpointSlices and returns updated
 // lists of EndpointSlices to create and update.
-func (t *TopologyCache) AddHints(si *SliceInfo) ([]*discovery.EndpointSlice, []*discovery.EndpointSlice) {
-	totalEndpoints := si.getTotalReadyEndpoints()
+func (t *TopologyCache) AddHints(si *hints.SliceInfo) ([]*discovery.EndpointSlice, []*discovery.EndpointSlice) {
+	totalEndpoints := getTotalReadyEndpoints(si)
 	allocations := t.getAllocations(totalEndpoints)
 
 	if allocations == nil {
 		klog.V(2).InfoS("Insufficient endpoints, removing hints from service", "serviceKey", si.ServiceKey)
 		t.RemoveHints(si.ServiceKey, si.AddressType)
-		return RemoveHintsFromSlices(si)
+		return hints.RemoveHintsFromSlices(si)
 	}
 
-	allocatedHintsByZone := si.getAllocatedHintsByZone(allocations)
+	allocatedHintsByZone := getAllocatedHintsByZone(si, allocations)
 
 	allocatableSlices := si.ToCreate
 	for _, slice := range si.ToUpdate {
@@ -111,7 +112,7 @@ func (t *TopologyCache) AddHints(si *SliceInfo) ([]*discovery.EndpointSlice, []*
 			if endpoint.Zone == nil || *endpoint.Zone == "" {
 				klog.InfoS("Endpoint found without zone specified, removing hints from service", "serviceKey", si.ServiceKey)
 				t.RemoveHints(si.ServiceKey, si.AddressType)
-				return RemoveHintsFromSlices(si)
+				return hints.RemoveHintsFromSlices(si)
 			}
 
 			allocatedHintsByZone[*endpoint.Zone]++

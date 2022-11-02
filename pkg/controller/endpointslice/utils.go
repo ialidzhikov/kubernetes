@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	discovery "k8s.io/api/discovery/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -383,14 +383,22 @@ func unchangedSlices(existingSlices, slicesToUpdate, slicesToDelete []*discovery
 	return unchangedSlices
 }
 
-// hintsEnabled returns true if the provided annotations include a
+// autoHintsEnabled returns true if the provided annotations include a
 // v1.AnnotationTopologyAwareHints key with a value set to "Auto" or "auto".
-func hintsEnabled(annotations map[string]string) bool {
+func autoHintsEnabled(annotations map[string]string) bool {
 	val, ok := annotations[v1.AnnotationTopologyAwareHints]
 	if !ok {
 		return false
 	}
 	return val == "Auto" || val == "auto"
+}
+
+func alwaysHintsEnabled(annotations map[string]string) bool {
+	val, ok := annotations[v1.AnnotationTopologyAwareHints]
+	if !ok {
+		return false
+	}
+	return val == "Always" || val == "always"
 }
 
 // managedByChanged returns true if one of the provided EndpointSlices is

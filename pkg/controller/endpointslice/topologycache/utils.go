@@ -25,48 +25,6 @@ import (
 	endpointsliceutil "k8s.io/kubernetes/pkg/controller/util/endpointslice"
 )
 
-// RemoveHintsFromSlices removes topology hints on EndpointSlices and returns
-// updated lists of EndpointSlices to create and update.
-func RemoveHintsFromSlices(si *SliceInfo) ([]*discovery.EndpointSlice, []*discovery.EndpointSlice) {
-	// Remove hints on all EndpointSlices we were already going to change.
-	slices := append(si.ToCreate, si.ToUpdate...)
-	for _, slice := range slices {
-		for i := range slice.Endpoints {
-			slice.Endpoints[i].Hints = nil
-		}
-	}
-
-	// Remove hints on all unchanged EndpointSlices and mark them for update
-	// if any already had hints. We use j to track the number/index of slices
-	// that are still unchanged.
-	j := 0
-	for _, slice := range si.Unchanged {
-		changed := false
-		for i, endpoint := range slice.Endpoints {
-			if endpoint.Hints != nil {
-				// Unchanged slices are still direct copies from informer cache.
-				// Need to deep copy before we make any modifications to avoid
-				// accidentally changing informer cache.
-				slice = slice.DeepCopy()
-				slice.Endpoints[i].Hints = nil
-				changed = true
-			}
-		}
-		if changed {
-			si.ToUpdate = append(si.ToUpdate, slice)
-		} else {
-			si.Unchanged[j] = slice
-			j++
-		}
-	}
-
-	// truncate si.Unchanged so it only includes slices that are still
-	// unchanged.
-	si.Unchanged = si.Unchanged[:j]
-
-	return si.ToCreate, si.ToUpdate
-}
-
 // redistributeHints redistributes hints based in the provided EndpointSlices.
 // It allocates endpoints from the provided givingZones to the provided
 // receivingZones. This returns a map that represents the changes in allocated

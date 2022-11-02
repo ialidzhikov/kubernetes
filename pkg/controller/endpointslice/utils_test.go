@@ -1190,7 +1190,7 @@ func Test_hintsEnabled(t *testing.T) {
 	}}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualEnabled := hintsEnabled(tc.annotations)
+			actualEnabled := autoHintsEnabled(tc.annotations)
 			if actualEnabled != tc.expectEnabled {
 				t.Errorf("Expected %t, got %t", tc.expectEnabled, actualEnabled)
 			}

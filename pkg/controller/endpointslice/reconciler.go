@@ -34,6 +34,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog/v2"
+	"k8s.io/kubernetes/pkg/controller/endpointslice/hints"
 	"k8s.io/kubernetes/pkg/controller/endpointslice/metrics"
 	"k8s.io/kubernetes/pkg/controller/endpointslice/topologycache"
 	endpointutil "k8s.io/kubernetes/pkg/controller/util/endpoint"
@@ -254,20 +255,22 @@ func (r *reconciler) reconcileByAddressType(service *corev1.Service, pods []*cor
 	// Topology hints are assigned per address type. This means it is
 	// theoretically possible for endpoints of one address type to be assigned
 	// hints while another endpoints of another address type are not.
-	si := &topologycache.SliceInfo{
+	si := &hints.SliceInfo{
 		ServiceKey: fmt.Sprintf("%s/%s", service.Namespace, service.Name),
 		ToCreate:   slicesToCreate,
 		ToUpdate:   slicesToUpdate,
 		Unchanged:  unchangedSlices(existingSlices, slicesToUpdate, slicesToDelete),
 	}
 
-	if r.topologyCache != nil && hintsEnabled(service.Annotations) {
+	if alwaysHintsEnabled(service.Annotations) {
+		slicesToCreate, slicesToUpdate = hints.AddAlwaysHints(si)
+	} else if r.topologyCache != nil && autoHintsEnabled(service.Annotations) {
 		slicesToCreate, slicesToUpdate = r.topologyCache.AddHints(si)
 	} else {
 		if r.topologyCache != nil {
 			r.topologyCache.RemoveHints(si.ServiceKey, addressType)
 		}
-		slicesToCreate, slicesToUpdate = topologycache.RemoveHintsFromSlices(si)
+		slicesToCreate, slicesToUpdate = hints.RemoveHintsFromSlices(si)
 	}
 
 	err := r.finalize(service, slicesToCreate, slicesToUpdate, slicesToDelete, triggerTime)
@@ -375,7 +378,7 @@ func (r *reconciler) finalize(
 	}
 
 	topologyLabel := "Disabled"
-	if r.topologyCache != nil && hintsEnabled(service.Annotations) {
+	if r.topologyCache != nil && autoHintsEnabled(service.Annotations) {
 		topologyLabel = "Auto"
 	}
 
